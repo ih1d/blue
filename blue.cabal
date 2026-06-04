@@ -1,8 +1,9 @@
 cabal-version:      3.0
 name:               blue
 version:            0.1.0.0
-synopsis:           A reflective language with dataflow semantics
 homepage:           https://github.com/ih1d/blue
+license:            BSD-3-Clause
+license-file:       LICENSE
 author:             Isaac Hiram Lopez Diaz
 maintainer:         isaac.lopez@upr.edu
 category:           Language
@@ -10,28 +11,41 @@ build-type:         Simple
 extra-doc-files:    README.md
 
 common warnings
-    ghc-options:
+    ghc-options: 
         -Wall
         -Wcompat
         -Widentities
-        -Wincoblueete-record-updates
-        -Wincoblueete-uni-patterns
+        -Wincomplete-record-updates
+        -Wincomplete-uni-patterns
         -Wpartial-fields
         -Wredundant-constraints
         -Wunused-packages
 
-executable blue
+common language
+    default-language: GHC2021
+    default-extensions:
+        DerivingStrategies
+        GeneralizedNewtypeDeriving
+        LambdaCase
+        OverloadedStrings
+        TypeFamilies
+
+library
     import:           warnings
-    main-is:          Main.hs
+                    , language
+    hs-source-dirs:   src
     build-depends:    base ^>=4.18.3.0
                     , parsec
-                    , mtl
-                    , hint
-                    , exceptions
     other-modules:
+        Syntax
         Lexer
         Parser
+    exposed-modules:
         Eval
-        Syntax
-    hs-source-dirs:   src
-    default-language: GHC2021
+executable blue
+    import:           warnings
+                    , language
+    main-is:          Main.hs
+    build-depends:    base ^>=4.18.3.0
+                    , blue
+    hs-source-dirs:   app

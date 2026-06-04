@@ -1,5 +1,14 @@
+-- |
+-- Module      :  Parser
+-- Copyright   :  (c) Isaac Hiram Lopez Diaz 2026
+-- License     :  BSD-3-Clause (see the file LICENSE)
+--
+-- Maintainer  :  isaac.lopez@upr.edu
+-- Stability   :  experimental
+-- Portability :  portable
+--
+-- Parser for Blue surface syntax. Produces the AST from "Syntax".
 module Parser where
-
 import Data.Functor.Identity (Identity)
 import Lexer
 import Syntax
@@ -38,12 +47,9 @@ expr = buildExpressionParser operatorTable term
 term :: Parser Expr
 term =
   blueParens expr
-    <|> evalEMExpr
-    <|> varExpr
-    <|> letExpr
     <|> ifExpr
     <|> boolExpr
-    <|> Const . NumV <$> blueInteger
+    <|> Const . IntV <$> blueInteger
     <|> Const . StrV <$> blueStringLiteral
 
 ifExpr :: Parser Expr
@@ -54,21 +60,6 @@ ifExpr = do
   thn <- expr
   els <- blueReserved "else" *> expr
   return (If cond thn els)
-
-letExpr :: Parser Expr
-letExpr = do
-  blueReserved "let"
-  v <- blueIdentifier
-  blueReservedOp "="
-  e <- expr
-  blueReserved "in"
-  Let v e <$> expr
-
-varExpr :: Parser Expr
-varExpr = Var <$> blueIdentifier
-
-evalEMExpr :: Parser Expr
-evalEMExpr = EM <$> (blueReserved "em" *> expr)
 
 parseExpr :: String -> Either ParseError Expr
 parseExpr = parse (blueWhiteSpace *> expr <* eof) "<blue>"

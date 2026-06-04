@@ -1,65 +1,54 @@
+-- |
+-- Module      :  Syntax
+-- Copyright   :  (c) Isaac Hiram Lopez Diaz 2026
+-- License     :  BSD-3-Clause (see the file LICENSE)
+--
+-- Maintainer  :  isaac.lopez@upr.edu
+-- Stability   :  experimental
+-- Portability :  portable
+--
+-- Abstract syntax for the Blue language.
 module Syntax where
 
-type Ident = String
+-- | A variable name in Blue
+type Id = String
 
+-- | Types in Blue
+data Type
+    = IntT
+    | BoolT
+    | StringT
+    deriving (Eq, Show)
+
+-- | Values in Blue
 data Value
-    = NumV Integer
+    = IntV Integer
     | BoolV Bool
     | StrV String
-    deriving (Eq)
-instance Show Value where
-    show (NumV i) = show i
-    show (BoolV True) = "true"
-    show (BoolV False) = "false"
-    show (StrV str) = str
+    deriving (Eq, Show)
 
-class ToValue a where
-    toValue :: a -> Value
-
-instance ToValue Integer where toValue = NumV
-instance ToValue String where toValue = StrV
-instance ToValue Bool where toValue = BoolV
-
+-- | Binary Operators
 data Op
     = Add
     | Sub
     | Mul
     | Pow
-    | And
-    | Or
     | Eq
+    | NotEq
     | Lt
     | Gt
     | LtEq
     | GtEq
-    | NotEq
-    deriving (Eq)
-instance Show Op where
-    show Add = "+"
-    show Sub = "-"
-    show Mul = "*"
-    show Pow = "^"
-    show And = "and"
-    show Or = "or"
-    show Eq = "=="
-    show Lt = "<"
-    show Gt = ">"
-    show LtEq = "<="
-    show GtEq = ">="
-    show NotEq = "!="
+    | And
+    | Or
+    | Not
+    deriving (Eq, Show)
 
+-- | Pure Blue expressions. Produce a Value when evaluated
 data Expr
     = Const Value
+    | Var Id
     | BinOp Op Expr Expr
     | If Expr Expr Expr
-    | Let Ident Expr Expr
-    | Var Ident
-    | EM Expr
-    deriving (Eq)
-instance Show Expr where
-    show (Const v) = show v
-    show (BinOp op e0 e1) = show e0 ++ " " ++ show op ++ " " ++ show e1
-    show (If cnd thn els) = "if " ++ show cnd ++ " then " ++ show thn ++ " else " ++ show els
-    show (Let v e i) = "let " ++ v ++ " = " ++ show e ++ " in " ++ show i
-    show (Var v) = v
-    show (EM e) = "em " ++ show e
+    | Let Id Expr Expr
+    deriving (Eq, Show)

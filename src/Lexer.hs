@@ -1,3 +1,13 @@
+-- |
+-- Module      :  Lexer
+-- Copyright   :  (c) Isaac Hiram Lopez Diaz 2026
+-- License     :  BSD-3-Clause (see the file LICENSE)
+--
+-- Maintainer  :  isaac.lopez@upr.edu
+-- Stability   :  experimental
+-- Portability :  portable
+--
+-- Tokenizer for the Blue language
 module Lexer where
 
 import Text.Parsec
@@ -23,8 +33,8 @@ blueDef =
           caseSensitive = True
         }
   where
-    ops = ["+", "-", "*", "^", "==", "<", ">", "<=", ">=", "!=", "="]
-    names = ["and", "or", "true", "false", "if", "then", "else", "let", "in", "em"]
+    ops = ["+", "-", "*", "^", "==", "<", ">", "<=", ">=", "/=", "="]
+    names = ["and", "or", "True", "False", "if", "then", "else", "let", "in", "em"]
 
 blueReserved :: String -> Parser ()
 blueReserved = reserved blue
