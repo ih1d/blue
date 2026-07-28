@@ -152,7 +152,6 @@ library
         , megaparsec     >=9.6  && <9.9
         , mtl            >=2.3  && <2.4
         , prettyprinter  >=1.7  && <1.8
-        , text           >=2.1  && <2.3
         , vector         >=0.13 && <0.14
 
     default-language: GHC2024

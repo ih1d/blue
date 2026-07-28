@@ -1,0 +1,56 @@
+# fourmolu -- source formatting.
+#
+#   fourmolu --mode inplace $(git ls-files '*.hs')   # format everything
+#   fourmolu --mode check   $(git ls-files '*.hs')   # what CI runs
+#
+# fourmolu finds blue.cabal on its own and picks up default-language
+# and default-extensions from whichever component owns the file, so
+# GHC2024 in src/ and GHC2021 in hw/ are both handled without help.
+
+# Matches what you have been writing.
+indentation: 4
+
+# Leading commas, and one entry per line in import and export lists, so
+# adding an export is a one-line diff instead of a two-line diff.
+comma-style: leading
+import-export-style: diff-friendly
+
+# Leading arrows keep long signatures scannable -- the arrows line up in
+# a column and the types read down the left edge:
+#
+#     eval
+#         :: Env
+#         -> SExpr
+#         -> Either String SExpr
+function-arrows: leading
+
+# `where` bodies at the same indent as the parent, not doubly indented.
+indent-wheres: false
+
+record-brace-space: false
+
+# One blank line between top-level declarations.  This is the setting
+# that fixes the run-on `data ... instance Eq ... instance Show ...` in
+# Blue.Syntax.
+newlines-between-decls: 1
+
+# Haddock comments stay as `-- |` lines everywhere, module headers
+# included.  fourmolu only ever rewrites Haddock comments -- plain `--`
+# comments, such as the BNF under the module header, are left exactly as
+# you typed them.
+haddock-style: single-line
+haddock-style-module: single-line
+
+let-style: auto
+in-style: right-align
+
+# `f :: Eq a => ...`, not `f :: (Eq a) => ...`
+single-constraint-parens: never
+
+unicode: never
+
+# Preserve blank lines you deliberately put inside a declaration.
+# Turning this off would let the formatter destroy the visual grouping
+# in a long `case` -- and the SECD step function is going to be one very
+# long `case`.
+respectful: true

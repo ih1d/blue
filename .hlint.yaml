@@ -1,0 +1,61 @@
+# hlint -- https://github.com/ndmitchell/hlint
+#
+#   hlint .            # everything
+#   hlint src/Blue     # one subtree
+#
+# hlint reads default-extensions out of blue.cabal, so GHC2024 syntax in
+# src/ parses without extra flags.
+
+- arguments:
+    - --color=auto
+
+# ----------------------------------------------------------------------
+# Partial functions
+# ----------------------------------------------------------------------
+# Build 2 is the semantic oracle for the entire project: the correctness
+# story is `interpret p == run (compile p)`.  A partial function in the
+# oracle does not fail loudly -- it makes the differential suite report a
+# compiler bug that is really an oracle bug, and you lose an evening.
+# Every one of these has a total counterpart that forces you to name the
+# failure case.  `toList` returning `Maybe` is the same discipline.
+- functions:
+    - {name: Prelude.head, within: []}
+    - {name: Prelude.tail, within: []}
+    - {name: Prelude.init, within: []}
+    - {name: Prelude.last, within: []}
+    - {name: Prelude.read, within: []}
+    - {name: Prelude.!!, within: []}
+    - {name: Prelude.foldl1, within: []}
+    - {name: Prelude.foldr1, within: []}
+    - {name: Prelude.maximum, within: []}
+    - {name: Prelude.minimum, within: []}
+    - {name: Data.Maybe.fromJust, within: []}
+    - {name: Data.List.foldl1', within: []}
+
+# `error` is deliberately NOT restricted yet: every stub in src/ and
+# spec/ is an `error "TODO"`.  Once the stubs are gone, add it here with
+# `within` naming the few places a genuine invariant violation belongs.
+
+# ----------------------------------------------------------------------
+# Hints hlint ships but leaves off
+# ----------------------------------------------------------------------
+- warn: {name: Use tuple-section}
+- warn: {name: Use section}
+
+# ----------------------------------------------------------------------
+# Hints that fight this codebase
+# ----------------------------------------------------------------------
+# Instances written out by hand on purpose: `Eq SExpr` compares closures
+# by allocation address, and `Show SExpr` must not print a closure's
+# captured environment.  Neither is derivable.
+- ignore: {name: Use newtype instead of data}
+
+# A Lisp evaluator is a large `case` over forms.  hlint's suggestions to
+# merge or factor those branches usually destroy the correspondence with
+# the grammar in Blue.Syntax, which is the thing keeping Build 2 and
+# Build 3 honest.
+- ignore: {name: Use guards, within: [Blue.Eval, Blue.Compile]}
+- ignore: {name: Reduce duplication, within: [Blue.Eval, Blue.Compile, Blue.SECD.Machine]}
+
+# Test modules may be as blunt as they like.
+- ignore: {within: [Test.Blue.Gen, Test.Blue.Differential, Test.Blue.Reader, Test.Blue.GC]}
