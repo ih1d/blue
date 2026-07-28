@@ -71,9 +71,11 @@ library
         Blue.Interpreter
         Blue.Eval
         Blue.Core
+        Blue.Closure
     build-depends:
         base  >=4.20 && <5,
         blue:frontend,
+        transformers
     default-language: GHC2024
 
 executable blue
