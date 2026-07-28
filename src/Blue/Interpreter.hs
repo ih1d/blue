@@ -5,7 +5,7 @@ import Blue.Eval (eval)
 import Blue.Par (myLexer, pExpr)
 import Blue.Skel ()
 import Control.Monad (when)
-import System.Exit (exitFailure, exitSuccess)
+import System.Exit (exitSuccess)
 import System.IO (BufferMode (LineBuffering, NoBuffering), hSetBuffering, isEOF, stdout)
 
 exitRepl :: IO ()
