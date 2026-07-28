@@ -1,37 +1,103 @@
 cabal-version:      3.0
 name:               blue
 version:            0.1.0.0
-synopsis:           A reflective language with dataflow semantics
-homepage:           https://github.com/ih1d/blue
+synopsis:           A lambda calculus compiler
+homepage:           https://blue-lang.org
 author:             Isaac Hiram Lopez Diaz
-maintainer:         isaac.lopez@upr.edu
+maintainer:         isaac@ih1d.com
 category:           Language
 build-type:         Simple
+tested-with:        GHC == 9.10.3
 extra-doc-files:    README.md
+extra-source-files: gen/blue.cf
+
+-- The frontend is generated from the LBNF grammar. After editing gen/blue.cf:
+--     bnfc --haskell -d -o gen gen/blue.cf && find gen -name '*.bak' -delete
+-- which (re)writes gen/Blue/{Abs.hs,ErrM.hs,Lex.x,Par.y,Print.hs,Skel.hs}.
+-- BNFC has no flag to suppress the .bak copies it leaves behind for every
+-- file whose contents changed, so the regen command deletes them itself.
+-- cabal runs alex and happy on Lex.x / Par.y itself, so the generated .hs
+-- files for those two are build artifacts and should not be committed.
 
 common warnings
     ghc-options:
         -Wall
         -Wcompat
         -Widentities
-        -Wincoblueete-record-updates
-        -Wincoblueete-uni-patterns
+        -Wmissing-home-modules
         -Wpartial-fields
         -Wredundant-constraints
         -Wunused-packages
+        -fshow-warning-groups
+        -fhide-source-paths
+
+common rts
+    ghc-options:
+        -threaded
+        -rtsopts
+        -with-rtsopts=-N
+
+-- The language frontend: lexer, parser, AST and pretty-printer that BNFC
+-- generates from gen/blue.cf. This is machine-written code, so it
+-- deliberately does not import `warnings` -- the strict set produces
+-- hundreds of warnings nobody can act on. GHC's default warnings still apply.
+library frontend
+    hs-source-dirs:   gen
+    exposed-modules:
+        Blue.Abs
+        Blue.ErrM
+        Blue.Lex
+        Blue.Par
+        Blue.Print
+        Blue.Skel
+    build-depends:
+        base  >=4.20 && <5,
+        array >=0.5  && <0.6
+    build-tool-depends:
+        alex:alex     >=3.5,
+        happy:happy   >=2.0
+    ghc-options:      -O2
+    -- Generated code targets plain Haskell2010 and enables what it needs with
+    -- per-file pragmas. GHC2024's MonoLocalBinds in particular can break the
+    -- happy-generated parser, so do not raise this to match the other stanzas.
+    default-language: Haskell2010
+
+library 
+    import:           warnings
+    hs-source-dirs:   src
+    exposed-modules:
+        Blue
+    other-modules:
+        Blue.Interpreter
+        Blue.Eval
+        Blue.Core
+    build-depends:
+        base  >=4.20 && <5,
+        blue:frontend,
+    default-language: GHC2024
 
 executable blue
-    import:           warnings
+    import:           warnings, rts
+    hs-source-dirs:   app
     main-is:          Main.hs
-    build-depends:    base ^>=4.18.3.0
-                    , parsec
-                    , mtl
-                    , hint
-                    , exceptions
+    build-depends:
+        base  >=4.20 && <5,
+        blue
+    default-language: GHC2024
+
+test-suite blue-test
+    import:           warnings, rts
+    type:             exitcode-stdio-1.0
+    main-is:          Spec.hs
+    hs-source-dirs:   test
+    -- Every spec module must be listed here as well; hspec-discover finds
+    -- them on disk but cabal still needs them declared.
     other-modules:
-        Lexer
-        Parser
-        Eval
-        Syntax
-    hs-source-dirs:   src
-    default-language: GHC2021
+    build-depends:
+        base            >=4.20   && <5,
+        blue:frontend,
+        blue,
+        hspec           >=2.11   && <2.12
+    build-tool-depends:
+        hspec-discover:hspec-discover >=2.11
+    default-language: GHC2024

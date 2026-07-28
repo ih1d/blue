@@ -1,3 +1,8 @@
 # Blue
 
-A Reflective language with dataflow semantics.
+## Installing
+
+### From Source
+
+#### Prerequisites
+

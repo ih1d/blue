@@ -1,0 +1,19 @@
+-- Author: Isaac H. Lopez Diaz
+
+entrypoints Expr ;
+
+Let. Expr  ::= "let" Ident "=" Expr "in" Expr ;
+Abs. Expr  ::= "\\" Ident "->" Expr ;
+Add. Expr1 ::= Expr1 "+" Expr2;
+Sub. Expr1 ::= Expr1 "-" Expr2;
+Mul. Expr2 ::= Expr2 "*" Expr3;
+App. Expr3 ::= Expr3 Expr4 ;
+Var. Expr4 ::= Ident ;
+Lit. Expr4 ::= Integer ;
+
+coercions Expr 4 ;
+
+comment ";" ;
+comment "#|" "|#" ;
+
+

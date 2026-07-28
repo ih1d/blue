@@ -1,1 +1,54 @@
+# Cabal / Stack build output
+dist/
 dist-newstyle/
+.stack-work/
+cabal.project.local
+cabal.project.local~
+.ghc.environment.*
+.cabal-sandbox/
+cabal.sandbox.config
+
+# GHC intermediate output
+*.hi
+*.hi-boot
+*.dyn_hi
+*.o
+*.o-boot
+*.dyn_o
+*.hie
+
+# Profiling, heap and event logs
+*.prof
+*.aux
+*.hp
+*.ps
+*.eventlog
+
+# hpc coverage
+.hpc/
+*.tix
+
+# BNFC saves the previous version of every file it overwrites
+*.bak
+
+# alex/happy expand these from gen/Blue/{Lex.x,Par.y}; cabal builds them
+# into dist-newstyle, but a manual alex/happy run drops them here
+gen/Blue/Lex.hs
+gen/Blue/Par.hs
+
+# Nix
+result
+result-*
+.direnv/
+
+# Editors
+*~
+*.swp
+*.swo
+.vscode/
+.idea/
+tags
+TAGS
+
+# macOS
+.DS_Store
