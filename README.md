@@ -1,8 +1,1 @@
-# Blue
-
-## Installing
-
-### From Source
-
-#### Prerequisites
-
+# The Blue Machine
