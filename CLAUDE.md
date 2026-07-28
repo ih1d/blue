@@ -57,38 +57,90 @@ monitor) belongs in M7+.
 Hardware is behind a manual flag because `clash-ghc` is a large
 dependency tree and is not needed before M2. `-f werror` for CI.
 
-Everything in `src/` and `spec/` is currently a stub that `error`s.
-
-## Where we are
-
-**M1, Build 2, assignment 1: `Blue.Syntax`.**
-
-Write the type(s) for the dialect, the helpers actually needed, and — as
-a comment at the top of the module — the grammar: concrete syntax plus
-the list of special forms. That comment is the spec both the compiler
-and the ROM's metacircular evaluator must honor.
-
-Three decisions to answer first:
-
-1. **One type or two?** The stub uses a single `SExpr` for source,
-   runtime values, and compiler output — the classic Lisp move, and the
-   ROM's metacircular `eval` wants homoiconicity. But `Nil | Sym | Fix |
-   Cons` cannot represent a closure. Which of the three known-good
-   answers, and why?
-2. **Special forms.** Of `quote if lambda let letrec define`: which are
-   primitive, which desugar? `SEL/JOIN` and `DUM/RAP` in the ISA are a
-   strong hint about which two are unavoidable. `define` is REPL-level
-   and has its own instruction pair — is it even in the expression
-   language?
-3. **Environments.** The `Eval` stub uses `Map Symbol SExpr`. SECD's
-   `LD` takes a (frame, offset) pair into a list of frames, not a name.
-   Does Build 2 model that, or stay naive and leave lexical addressing
-   to the compiler? Both defensible: one makes the differential test
-   more honest, the other keeps Build 2 the dumb oracle it is meant to
-   be.
+Everything in `src/` and `spec/` other than `Blue.Syntax` is a stub.
 
 Design pressure to keep in mind throughout: every construct that does
 not map onto an SECD instruction costs you in the compiler, and again in
 the metacircular evaluator. A form added today is paid for three times.
 
-`Blue.Eval` comes after. Don't touch it yet.
+## Decisions already settled
+
+These were argued out and should not be relitigated without a reason.
+
+- **One `SExpr` type** for source, values and compiler output. Closures
+  are a constructor no source text can denote — hence `read . print ==
+  id` is a property of *source*, not of `SExpr`.
+- **Closures carry an allocation address** (`Closure Int [Symbol] SExpr
+  Env`). `Eq` compares that address, never structure: two separately
+  created closures are different objects, which is what `LDF` does on
+  the board. Structural comparison would also diverge on the cyclic
+  environments `letrec` builds.
+- **`Show` is hand-written**, closures print as `#<closure n>`. Deriving
+  it hangs once environments become cyclic.
+- **Primitive: `quote if lambda letrec`.** `let` desugars to a lambda
+  application. `define` is REPL-level, not an expression. Rule of thumb:
+  if the ISA has an instruction for it, it is primitive — `SEL/JOIN` is
+  the tell for `if`, `DUM/RAP` for `letrec`.
+- **`letrec` right-hand sides are restricted to lambdas.** `RAP` applies
+  what it finds in the frame; a non-lambda binding makes the lazy knot
+  diverge (`(letrec ((x x)) x)` hangs, it does not error).
+- **nil is false, everything else is true.** `eq`, `atom` and `leq`
+  return the fixnum `1` for true. The test is on the tag alone, which is
+  the cheapest branch condition in hardware.
+- **Environments are naive assoc lists** — `[(Symbol, SExpr)]`, defined
+  in `Blue.Syntax`. Build 2's job is to be obviously correct, not to
+  prefigure SECD's (frame, offset) addressing. Build 2 and Build 1 are
+  *supposed* to share nothing; the differential test compares final
+  answers, and its value comes entirely from that independence.
+- **Call-by-value, lexical scope.** A closure's body runs in the
+  environment stored *in the closure*, extended with the parameters
+  bound to *evaluated* arguments. Arity mismatch is an error — no
+  currying, because `AP` takes one complete argument frame.
+- **Build 2 stays pure.** `StateT Int (Either String)`, no `IO`. The M1
+  REPL runs Build 1, not the tree-walker, so `getc`/`putc` are not
+  available in the reference evaluator.
+
+## Open questions
+
+- What does division/remainder by zero do? Both machines must agree.
+- `eq` on non-atoms: Haskell's `==` recurses structurally, the board
+  compares addresses. Restrict `eq` to atoms, or it will disagree with
+  Build 1 on the primitive most likely to show up in generated tests.
+- Fixnum width: the grammar states −2²⁹ … 2²⁹−1 but the type is `Int32`
+  and arithmetic does not wrap. Wants a `mkFix` that computes at `Int64`
+  and wraps into 30-bit two's complement, with `Fix` hidden from the
+  export list.
+- Is failure part of the observable contract? If `interpret p == run
+  (compile p)` must agree on *errors*, Build 1 needs arity checks it may
+  not want. If not, `Test.Blue.Gen` must never generate a failing
+  program. Recommended: compare successful results only, never compare
+  error strings.
+
+## Where we are
+
+**M1, Build 2: `Blue.Eval`.** `Blue.Syntax` is done and reviewed.
+
+The build is currently broken mid-migration: `text` was dropped from
+`build-depends` while `Blue.Syntax` and `Blue.Printer` still import
+`Data.Text`. Finish it — `type Symbol = String`.
+
+Outstanding in `Blue.Eval`, in order:
+
+1. **The dispatch order.** What gets evaluated depends on what the head
+   is, so the head must be inspected *syntactically* before anything is
+   evaluated. Special forms get their operands raw; primitives and
+   applications get them evaluated (`traverse (eval env)`); only the
+   application case evaluates the head.
+2. Drop `Env` from `apply` and `applyPrimOp` — with values arriving,
+   neither needs it, and `apply` without it *cannot* implement dynamic
+   scope. Let the type enforce the decision.
+3. `lambda` (convert the parameter `SExpr` to `[Symbol]`, reject
+   non-symbols) and `letrec` (draw all addresses first, then tie one
+   lazy knot binding the whole group; comment that the machine does this
+   by mutation via `DUM`/`RAP`).
+4. `cons` must match two arguments, not one pair. Arithmetic must wrap.
+   Division by zero must not crash. `getc`/`putc` should be explicit
+   "not available in Build 2" errors.
+
+After `Blue.Eval`: `Blue.Reader`, then the differential harness, then
+Build 1.
